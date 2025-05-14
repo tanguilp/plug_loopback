@@ -74,6 +74,19 @@ defmodule PlugLoopbackTest do
       assert fresh_conn.status == nil
     end
 
+    test "copies back application/x-www-form-urlencoded content to new conn" do
+      req_data = [{"foo bar", "1"}, {"city", "東京"}]
+
+      conn =
+        build_conn(:post, "/some/path", :uri_string.compose_query(req_data))
+        |> put_req_header("content-type", "application/x-www-form-urlencoded")
+        |> fetch_req_body([:urlencoded])
+
+      fresh_conn = conn |> PlugLoopback.replay() |> fetch_req_body([:urlencoded])
+
+      assert fresh_conn.body_params == Enum.into(req_data, %{})
+    end
+
     test "copies back JSON content to new conn" do
       req_data = %{"some" => ["json"]}
 
