@@ -29,10 +29,21 @@ defmodule PlugLoopback do
 
   > #### Warning {: .warning}
   >
-  > For some very good reason, you must run these commands in their own process. **Do not** run
+  > For some very good reasons, you must run these commands in their own process. **Do not** run
   > it in a process that already processed a `%Plug.Conn{}`.
 
   """
+
+  defmodule EndpointNotConfiguredError do
+    @moduledoc """
+    Error raised when the endpoint is not configured and the operation cannot succeed
+
+    An endpoint is configured when `PlugLoopback.replay/1` is called on a conn that has been through
+    a Phoenix endpoint, or when `PlugLoopback.from_phoenix_endpoint/1` was used.
+    """
+
+    defexception message: "Not endpoint was detected and configured, cannot run the current conn"
+  end
 
   @enforce_keys [:owner]
   defstruct [
@@ -61,6 +72,15 @@ defmodule PlugLoopback do
   conn
   |> PlugLoopback.replay()
   |> MyOtherPlugModule.call(opts)
+  ```
+
+  or if the conn is from a phoenix endpoint:
+
+  ```elixir
+  conn
+  |> PlugLoopback.replay()
+  |> # modify the conn, for instance by setting new request headers
+  |> PlugLoopback.run()
   ```
 
   Peer data is copied from the original conn.
@@ -124,16 +144,34 @@ defmodule PlugLoopback do
   Readies a conn for requesting
 
   This function sets the necessary information to make a request: method, path, headers and body.
+
+  When setting a body, make sure to encode it to a binary **and** to set the correct
+  `content-type` header. This library doesn't do it for you.
+
+  ## Example
+
+  ```elixir
+  MyAppWeb.Endpoint
+  |> PlugLoopback.from_phoenix_endpoint()
+  |> PlugLoopback.post("/api/user", [{"content-type", "application/json"}, JSON.encode!(data)])
+  |> PlugLoopback.run()
+  ```
   """
-  @spec request(Plug.Conn.t(), Plug.Conn.method(), binary(), Plug.Conn.headers(), binary() | nil) ::
+  @spec request(
+          Plug.Conn.t(),
+          Plug.Conn.method() | atom(),
+          binary(),
+          Plug.Conn.headers(),
+          binary() | nil
+        ) ::
           Plug.Conn.t()
-  def request(
-        %Plug.Conn{} = conn,
-        <<_::binary>> = method,
-        <<_::binary>> = path,
-        headers \\ [],
-        body \\ nil
-      )
+  def request(conn, method, path, req_headers \\ [], body \\ nil)
+
+  def request(conn, method, path, headers, body) when is_atom(method) do
+    request(conn, method |> to_string |> String.upcase(), path, headers, body)
+  end
+
+  def request(%Plug.Conn{} = conn, <<_::binary>> = method, <<_::binary>> = path, headers, body)
       when is_list(headers) and (is_binary(body) or is_nil(body)) do
     {__MODULE__.Adapter, adapter_state} = conn.adapter
 
@@ -204,12 +242,14 @@ defmodule PlugLoopback do
   Runs a request created by functions of this module
   """
   @spec run(Plug.Conn.t()) :: Plug.Conn.t()
-  def run(%Plug.Conn{} = conn) do
-    {__MODULE__.Adapter, adapter_state} = conn.adapter
-
-    {endpoint, opts} = adapter_state.next_plug
-
+  def run(
+        %Plug.Conn{adapter: {__MODULE__.Adapter, %__MODULE__{next_plug: {endpoint, opts}}}} = conn
+      ) do
     endpoint.call(conn, endpoint.init(opts))
+  end
+
+  def run(_conn) do
+    raise __MODULE__.EndpointNotConfiguredError
   end
 
   defp req_body(%Plug.Conn{body_params: %Plug.Conn.Unfetched{}}) do

@@ -11,11 +11,7 @@ defmodule PlugLoopbackTest do
   defmodule Endpoint do
     use Phoenix.Endpoint, otp_app: :phoenix
     def init(opts), do: opts
-    def call(conn, :set), do: resp(conn, 200, "ok")
-
-    def call(conn, opts) do
-      Router.call(conn, Router.init([]))
-    end
+    def call(conn, _), do: resp(conn, 200, "ok")
   end
 
   setup_all do
@@ -118,6 +114,49 @@ defmodule PlugLoopbackTest do
       assert Plug.Conn.get_peer_data(conn).address == {127, 0, 0, 1}
       assert conn.state == :unset
       assert conn.status == nil
+    end
+  end
+
+  describe "request/5" do
+    test "sets the right values" do
+      req_data = %{"some" => "content"}
+      conn = PlugLoopback.from_phoenix_endpoint(Endpoint)
+
+      conn =
+        PlugLoopback.request(
+          conn,
+          :put,
+          "/some/other/path",
+          [{"content-type", "application/json"}],
+          JSON.encode!(req_data)
+        )
+
+      assert conn.method == "PUT"
+      assert conn.path_info == ["some", "other", "path"]
+      assert conn.request_path == "/some/other/path"
+      assert conn.req_headers == [{"content-type", "application/json"}]
+      assert fetch_req_body(conn, [:json]).body_params == req_data
+    end
+  end
+
+  describe "run/1" do
+    test "runs a configured conn" do
+      conn =
+        Endpoint
+        |> PlugLoopback.from_phoenix_endpoint()
+        |> PlugLoopback.get("/some/imaginary/path")
+        |> PlugLoopback.run()
+
+      assert conn.status == 200
+      assert conn.resp_body == "ok"
+    end
+
+    test "raises if no next plug is configured" do
+      assert_raise PlugLoopback.EndpointNotConfiguredError, fn ->
+        :get
+        |> build_conn("/some/path")
+        |> PlugLoopback.run()
+      end
     end
   end
 
