@@ -7,12 +7,12 @@ defmodule PlugLoopback do
   cumbersome, hard to test and comes with an overhead.
 
   This library intends to provide with a set of function to directly call your endpoint. It is very
-  similar to `Phoenix.Conntest`.
+  similar to `Phoenix.ConnTest` and reimplements a Plug adapter for this purpose.
 
   You can form a new request from a Phoenix endpoint:
 
   ```elixir
-  MyAppWeb
+  MyAppWeb.Endpoint
   |> PlugLoopback.from_phoenix_endpoint()
   |> PlugLoopback.get("/some/path", [{"some", "header"}])
   |> Plug.Conn.put_req_header("another", "header")

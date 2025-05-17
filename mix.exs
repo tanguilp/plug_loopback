@@ -12,6 +12,8 @@ defmodule PlugLoopback.MixProject do
         main: "readme",
         extras: ["README.md", "CHANGELOG.md"]
       ],
+      package: package(),
+      source_url: "https://github.com/tanguilp/plug_loopback"
     ]
   end
 
@@ -31,4 +33,10 @@ defmodule PlugLoopback.MixProject do
       {:phoenix, "~> 1.0", only: :test}
     ]
   end
+
+  def package() do
+    [
+      licenses: ["Apache-2.0"],
+      links: %{"GitHub" => "https://github.com/tanguilp/plug_loopback"}
+    ]
 end

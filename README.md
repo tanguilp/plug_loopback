@@ -12,7 +12,7 @@ similar to `Phoenix.Conntest`.
 You can form a new request from a Phoenix endpoint:
 
 ```elixir
-MyAppWeb
+MyAppWeb.Endpoint
 |> PlugLoopback.from_phoenix_endpoint()
 |> PlugLoopback.get("/some/path", [{"some", "header"}])
 |> Plug.Conn.put_req_header("another", "header")
