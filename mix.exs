@@ -39,4 +39,5 @@ defmodule PlugLoopback.MixProject do
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => "https://github.com/tanguilp/plug_loopback"}
     ]
+  end
 end
