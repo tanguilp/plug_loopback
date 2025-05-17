@@ -45,6 +45,17 @@ defmodule PlugLoopback do
     defexception message: "Not endpoint was detected and configured, cannot run the current conn"
   end
 
+  defmodule RequestBodyNotFetchedError do
+    @moduledoc """
+    Error raised when the request body is not fetched for POST, PUT or PATCH requests
+
+    Body can be fetched using `Plug.Parsers`. Make sure to call this function after
+    fetching the request body.
+    """
+
+    defexception message: "Request body needs to be fetched for this type of request"
+  end
+
   @enforce_keys [:owner]
   defstruct [
     :method,
@@ -252,8 +263,12 @@ defmodule PlugLoopback do
     raise __MODULE__.EndpointNotConfiguredError
   end
 
+  defp req_body(%Plug.Conn{method: method, body_params: %Plug.Conn.Unfetched{}}) when method in ~w|PATCH POST PUT| do
+    raise __MODULE__.RequestBodyNotFetchedError
+  end
+
   defp req_body(%Plug.Conn{body_params: %Plug.Conn.Unfetched{}}) do
-    raise "Unfetched request body"
+    ""
   end
 
   defp req_body(conn) do

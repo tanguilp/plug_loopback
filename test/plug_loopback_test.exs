@@ -95,6 +95,13 @@ defmodule PlugLoopbackTest do
 
       assert fresh_conn.body_params == req_data
     end
+
+    test "raises if the body is not fetched" do
+      assert_raise PlugLoopback.RequestBodyNotFetchedError, fn ->
+        :post |> build_conn("/some/path") |> PlugLoopback.replay()
+      end
+    end
+
   end
 
   describe "from_phoenix_endpoint/1" do
