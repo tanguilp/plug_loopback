@@ -4,6 +4,7 @@ defmodule PlugLoopback.MixProject do
   def project do
     [
       app: :plug_loopback,
+      description: "A set of Plug utils to programmatically call your own endpoints",
       version: "0.1.0",
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
