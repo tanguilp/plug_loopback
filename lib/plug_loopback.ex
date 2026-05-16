@@ -139,11 +139,13 @@ defmodule PlugLoopback do
       next_plug: {endpoint, []}
     }
 
+    %URI{} = uri = endpoint.struct_url()
+
     conn =
       Plug.Conn.Adapter.conn(
         {__MODULE__.Adapter, adapter_state},
         nil,
-        %URI{endpoint.struct_url() | path: "/"},
+        %URI{uri | path: "/"},
         adapter_state.peer_data.address,
         []
       )
@@ -184,7 +186,7 @@ defmodule PlugLoopback do
 
   def request(%Plug.Conn{} = conn, <<_::binary>> = method, <<_::binary>> = path, headers, body)
       when is_list(headers) and (is_binary(body) or is_nil(body)) do
-    {__MODULE__.Adapter, adapter_state} = conn.adapter
+    {__MODULE__.Adapter, %__MODULE__{} = adapter_state} = conn.adapter
 
     adapter_state = %__MODULE__{adapter_state | method: method, req_body: body}
 
@@ -263,7 +265,8 @@ defmodule PlugLoopback do
     raise __MODULE__.EndpointNotConfiguredError
   end
 
-  defp req_body(%Plug.Conn{method: method, body_params: %Plug.Conn.Unfetched{}}) when method in ~w|PATCH POST PUT| do
+  defp req_body(%Plug.Conn{method: method, body_params: %Plug.Conn.Unfetched{}})
+       when method in ~w|PATCH POST PUT| do
     raise __MODULE__.RequestBodyNotFetchedError
   end
 

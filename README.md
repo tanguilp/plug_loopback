@@ -32,7 +32,7 @@ conn
 ```elixir
 def deps do
   [
-    {:plug_loopback, "~> 0.1.0"}
+    {:plug_loopback, "~> 1.0.0"}
   ]
 end
 ```

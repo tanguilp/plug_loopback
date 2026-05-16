@@ -101,7 +101,6 @@ defmodule PlugLoopbackTest do
         :post |> build_conn("/some/path") |> PlugLoopback.replay()
       end
     end
-
   end
 
   describe "from_phoenix_endpoint/1" do
